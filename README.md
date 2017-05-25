@@ -1,8 +1,7 @@
-# ASSIGNMENT 5 #
-## Who did what: ##
-### Tom: Free Store ###
-### Kai: Unique Feature, and assistance with Free Store and Lists ###
-### Mike: Lists and list operations ###
+Language created for Marist College Theory of Programming Languages.
+Host language is Java.
+Parser used: JavaCC.
+See Language Specification Doc for more details.
 
 ## Language Syntax: ##
 * bind x = 5 //cross-program variable assignment
@@ -20,9 +19,3 @@
 * run saved //running function that has been saved to memory
 * cons([1],[4,5]) //lists, and the cons operator to combine two lists
 * head [4,5] //head and tail operators for lists
-
-# ASSIGNMENT 4 #
-## Who did what: ##
-### Tom: User-defined Functions ###
-### Kai: Arithmetic, Logical, Relational Operators ###
-### Mike: Reading from input and printing output ###
