@@ -1,0 +1,458 @@
+/**
+ * JavaCC template file created by SF JavaCC plugin 1.5.28+ wizard for JavaCC 1.5.0+
+ */
+/**
+ * THIS IS THE GRAMMAR FILE. JAVACC TAKES THIS FILE AND DERIVES A PARSER.JAVA FILE.
+ */
+options
+{
+  static = false;
+  LOOKAHEAD = 10;
+}
+
+PARSER_BEGIN(Parser)
+
+public class Parser
+{
+  public static void main(String args []) throws ParseException, UndefinedTokenEnvironmentException
+  {
+	  Parser parser = new Parser(System.in);
+      while(true){
+          System.out.print("LoopdeeDo>");
+          try
+          {
+//           AProgram pgm = Parser.Pgm();
+			 AProgram pgm = parser.Pgm();
+             System.out.println("Successful parse! Interpreting...");
+			 //System.out.println(pgm.toString());
+             //pgm.interpret(); <--a different way to interpret, leaving it commented out for future reference
+			 Interp.interp(pgm);
+          }
+          catch (Exception e)
+          {
+             System.out.println("Syntax check failed: " + e.getMessage());
+             parser.ReInit(System.in);
+          }
+          catch (Error e)
+          {
+             System.out.println("Oops");
+             System.out.println(e.getMessage());
+             break;
+          }
+      }
+   }
+}
+
+PARSER_END(Parser)
+
+SKIP :
+{
+  " "
+| "\r"
+| "\t"
+| "\n"
+}
+
+TOKEN : /* OPERATORS */
+{
+  < TIsZero : "zero?" >
+| < TMinus  : "-" >
+| < TPlus : "+" >
+| < TTimes : "*" >
+| < TDivide : "/" >
+| < TMod: "%" >
+| < TGreaterEqual: ">=" >
+| < TLessEqual: "<=" >
+| < TGreater: ">" >
+| < TLess: "<" >
+| < TEquals: "==" >
+| < TAnd: "&&" >
+| < TOr: "||" >
+}
+
+TOKEN :
+{
+    < TBool : (< BOOL >)+ >
+|   < TScolon : ";" >
+| 	< TLet : "let" >
+| 	< TIn : "in" >
+|   < TIf : "if" >
+| 	< TThen : "then" >
+| 	< TElse : "else" >
+|   < TPrint : "print" >
+|   < TRead : "read" >
+|   < TSave : "save" > //SAVE
+|	< TRun : "run" > //RUN
+|	< TSaved : "saved" > //SAVED
+|	< TLoop : "loop" > //LOOP
+|   < TTextFile: (< CHAR >)(< CHAR > | < DIGIT >)* ".txt" >
+|   < TFunction: "fn" >
+| 	< TAssign : "=" >
+| 	< TLParen : "(" >
+| 	< TRParen : ")" >
+|   < THead : "head" >
+|   < TTail : "tail" >
+|   < TCons : "cons" >
+|   < TLsqBracket : "[" >
+|   < TRsqBracket : "]" >
+| 	< TComma : "," >
+| 	< TDo : "do" >
+|   < TBind : "bind" >
+|   < TVar : (< CHAR >)(< CHAR > | < DIGIT > | "_" | "?" | "'")* >
+|   < #CHAR : [ "a" - "z" ] >
+|   < TString: "\"" ("\\" ("\\" |"\r"| "\n" | "\"") | ~["\\","\n","\""] )* "\"" >
+|   < TNum : (< DIGIT >)+ > 
+|   < #DIGIT : [ "0"-"9" ] >
+|   < #BOOL : ("true") | ("false") >
+}
+
+/**
+ * GRAMMAR
+ */
+
+AProgram Pgm() :
+{
+	Exp e;
+}
+{
+	(
+	   e = Exp() { return new AProgram(e); } //makes new AProgram node. Points to an expression.
+	|  e = LoopExp() { return new AProgram(e); } //allows user to continuously loop through a function
+	|  e = SaveRunExp() { return new AProgram(e); } //allows user to save a function and then run it to continuously loop through it
+	)
+}
+Exp Exp() :
+{
+	Exp e;
+}
+{
+  	(
+   	  e = IfExp() { return e; }
+   	| e = NegExp() { return e; }
+   	| < TLParen > e = AddDiffExp() < TRParen > { return e; }
+	| < TLParen > e = RelationalExp() < TRParen > { return e; }
+	| < TLParen > e = LogicalExp() < TRParen > { return e; }
+  	| e = IsZeroExp() { return e; }
+  	| e = LetExp() { return e; }
+  	| e = HeadExp() { return e; }
+  	| e = TailExp() { return e; }
+  	| e = ConsExp() { return e; }
+  	| e = VarExp() { return e; }
+  	| e = ConstExp() { return e; }
+  	| e = BoolExp() { return e; }
+  	| e = StringExp() { return e;}
+  	| e = PrintExp() { return e; }
+  	| e = ReadExp() { return e; }
+  	| e = FunctionExp() { return e; }
+  	| e = CallExp() { return e; }
+  	| e = AssignExp() { return e; }
+  	| e = ListExp() { return e; }
+  
+  	
+  	)
+}
+Exp AssignExp() :
+{
+	Token t;
+	Exp e;
+}
+{
+	< TBind > t = < TVar > < TAssign > e = Exp() { return new AssignExp(t, e); }
+}
+Exp SaveRunExp() :
+{
+    Exp e;
+}
+{
+	  e = SaveExp() { return e; }
+  	| e = RunExp() { return e; }
+}
+Exp NegExp() :
+{
+	Token t;
+}
+{
+	< TMinus > t = < TNum > { return new NegExp(t); }
+}
+Exp LoopExp() :
+{
+	Exp e;
+}
+{
+	< TLoop > e = FunctionExp() { return new LoopExp(e); }
+}
+Exp SaveExp() :
+{
+	Exp e;
+}
+{
+	< TSave > e = FunctionExp() { return new SaveExp(e); }
+}
+Exp RunExp() :
+{}
+{
+	< TRun > < TSaved > { return new RunExp(); }
+}
+Exp FunctionExp() :
+{
+  Exp e1;
+  Exp e2;
+}
+{
+	< TFunction > < TLParen > e1 = VarExp() < TRParen > e2 = Exp() { return new FunctionExp(e1, e2); }
+}
+Exp CallExp() : 
+{
+  Exp e1;
+  Exp e2;
+}
+{
+	< TLParen > e1 = Exp() < TComma > e2 = Exp() < TRParen > { return new CallExp(e1, e2); }
+}
+Exp LogicalExp() :
+{
+	Exp e1;
+	Exp e2;
+}
+{
+	e1 = LogicalSub() ( < TAnd > e2 = LogicalExp() { return new AndExp(e1, e2); } )* { return e1; }
+}
+Exp LogicalSub() :
+{
+	Exp e1;
+	Exp e2;
+}
+{
+	e1 = LogicalTerm() < TOr > e2 = LogicalSub() { return new OrExp(e1, e2); }
+|
+	e1 = LogicalTerm() { return e1; }
+}
+Exp LogicalTerm() :
+{
+	Exp e;
+}
+{
+	e = Exp() { return e; }
+//|
+//	e = BoolExp() { return e; }
+//|
+//	e = VarExp() { return e; }
+}
+Exp RelationalExp() :
+{
+	Exp e1;
+	Exp e2;
+}
+{
+(
+    
+	e1 = RelationalTerm() < TGreaterEqual > e2 = RelationalTerm() { return new GreaterEqualExp(e1, e2); }
+|
+	e1 = RelationalTerm() < TLessEqual > e2 = RelationalTerm() { return new LessEqualExp(e1, e2); }
+|
+	e1 = RelationalTerm() < TGreater > e2 = RelationalTerm() { return new GreaterExp(e1, e2); }
+|
+	e1 = RelationalTerm() < TLess > e2 = RelationalTerm() { return new LessExp(e1, e2); }
+|
+	e1 = RelationalTerm() < TEquals > e2 = RelationalTerm() { return new EqualsExp(e1, e2); }
+)
+}
+Exp RelationalTerm() :
+{
+  Exp e;
+}
+{
+	e = Exp() { return e; }
+//|
+//	e = ConstExp() { return e; }
+//|
+//	e = VarExp() { return e; }
+//|
+//	e = NegExp() { return e; }
+}
+Exp IfExp() :
+{
+  Exp e1;
+  Exp e2;
+  Exp e3;
+}
+{
+	(
+      < TIf > e1 = Exp() < TThen > e2 = Exp() < TElse > e3 = Exp() { return new IfExp(e1, e2, e3); }
+	)
+}
+//Creating levels of precedence by creating new nonterminals
+Exp AddDiffExp() :
+{
+  Exp e1;
+  Exp e2;
+}
+{
+	(
+	  e1 = MultDivExp() { }
+	    (
+		    ( < TMinus > e2 = AddDiffExp() { return new DiffExp(e1, e2);  })
+			| 
+			(< TPlus > e2 = AddDiffExp() { return new AddExp(e1, e2); })
+			|
+			({ return e1; })
+		)
+	)
+}
+Exp MultDivExp() :
+{
+  Exp e1;
+  Exp e2;
+}
+{
+	(
+	  e1 = FactorExp()
+	  (
+	    (
+		  (< TTimes > e2 = MultDivExp() { return new MultExp(e1, e2); } )
+		  |
+		  (< TDivide > e2 = MultDivExp() { return new DivExp(e1, e2); } )
+		  |
+		  (< TMod > e2 = MultDivExp() { return new ModExp(e1, e2); } )
+		  |
+		  ({ return e1; })
+		)
+	  )
+	)
+}
+Exp IsZeroExp() :
+{
+  Exp e;
+}
+{
+	< TIsZero > < TLParen > e = Exp() < TRParen > { return new IsZeroExp(e); }
+}
+Exp FactorExp() :
+{
+  Token t;
+  Exp e;
+}
+{
+//	< TMinus > t = < TNum > { return new NegExp(t); } //to not confuse negative with subtraction
+//|
+//	e = NegExp() { return e; } //to not confuse negative with subtraction
+//|
+	e = Exp() { return e; }
+//|
+//	e = ConstExp() { return e; }
+//|
+//	e = VarExp() { return e; }
+}
+Exp ConstExp() :
+{
+	Token t;
+}
+{
+	t = < TNum > { return new ConstExp(t); }
+}
+Exp VarExp() :
+{
+	Token t;
+}
+{
+	t = < TVar > { return new VarExp(t); }
+}
+
+Exp StringExp() :
+{
+	Token t;
+}
+{
+	t = < TString > { return new StringExp(t); }
+}
+
+Exp PrintExp() :
+{
+	Exp e;
+}
+{
+  	< TPrint > e = StringExp()  { return new PrintExp(e); }
+}
+
+Exp ReadExp() :
+{
+	
+	Token t;
+}
+{
+	< TRead > t = < TTextFile > { return new ReadExp(t); }
+
+}
+
+Exp BoolExp() :
+{
+	Token t;
+}
+{
+  t = < TBool > { return new BoolExp(t); }
+}
+
+
+Exp LetExp() :
+{
+	Token t;
+	Exp e1;
+	Exp e2;
+}
+{
+	< TDo > e2 = Exp() t = < TVar > < TAssign > e1 = Exp() { return new LetExp(t,e1,e2); }
+}
+Exp ListExp() :
+{
+  Exp e1;
+}
+{
+	<TLsqBracket > e1 = NonEmptyListExp() <TRsqBracket > { return e1; }
+|
+	<TLsqBracket > <TRsqBracket > { return new ListExp(); }
+}
+
+Exp NonEmptyListExp() :
+{
+	Exp e1;
+	Exp e2;
+}
+{
+
+	    e1 =  ConstExp()
+	    (
+	    	(
+	    	  < TComma > e2 = NonEmptyListExp() { return new ListExp(e1,e2); }
+	    	)
+	   |
+	   		(
+	   	  		{ return new ListExp(e1); }
+	   		)
+	 	)
+}
+ 
+
+Exp HeadExp() :
+{
+	Exp e1;
+}
+{
+	< THead > e1 = Exp() { return new HeadExp(e1); }
+}
+
+Exp ConsExp() :
+{
+	Exp e1;
+	Exp e2;
+}
+{
+  < TCons > < TLParen > e1 = Exp()< TComma > e2 = Exp() < TRParen > { return new ConsExp(e1,e2); }
+}
+
+Exp TailExp() :
+{
+	Exp e1;
+}
+{
+	< TTail > e1 = Exp() { return new TailExp(e1); }
+}
